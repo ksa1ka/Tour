@@ -1,0 +1,6 @@
+export { authService } from './authService'
+export { fantasyService } from './fantasyService'
+export { matchService } from './matchService'
+export { teamService } from './teamService'
+export { tournamentService } from './tournamentService'
+export { userService } from './userService'

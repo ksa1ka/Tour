@@ -1,0 +1,332 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  VIEWER
+  PLAYER
+}
+
+enum TournamentFormat {
+  SINGLE_ELIMINATION
+  DOUBLE_ELIMINATION
+  ROUND_ROBIN
+  SWISS
+  GROUP_STAGE
+}
+
+enum TournamentStatus {
+  DRAFT
+  OPEN
+  REGISTRATION
+  CLOSED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+/** Дисциплина турнира (фильтр в списке и выбор при создании). */
+enum TournamentGame {
+  VALORANT
+  CS2
+  DOTA2
+  LEAGUE_OF_LEGENDS
+  DEADLOCK
+  WORLD_OF_TANKS
+}
+
+model User {
+  id                   String   @id @default(cuid())
+  email                String   @unique
+  password             String
+  role                 UserRole @default(VIEWER)
+  displayName          String?
+  bio                  String?
+  avatarUrl            String?
+  /** Баланс fantasy points для магазина наград (списание при покупке). */
+  fantasyPointsBalance Int      @default(2000)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  tournamentsCreated Tournament[] @relation("TournamentCreator")
+  fantasyTeams       FantasyTeam[]
+  refreshTokens      RefreshToken[]
+  rewardInventory    UserReward[]
+  supportTickets     SupportTicket[]
+}
+
+enum SupportTicketStatus {
+  OPEN
+  CLOSED
+}
+
+enum SupportMessageRole {
+  USER
+  ADMIN
+}
+
+model SupportTicket {
+  id        String              @id @default(cuid())
+  /** Публичный номер обращения (показывается пользователю). */
+  publicId  String              @unique
+  email     String
+  userId    String?
+  category  String
+  topic     String
+  status    SupportTicketStatus @default(OPEN)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  user     User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  messages SupportMessage[]
+
+  @@index([email])
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model SupportMessage {
+  id        String             @id @default(cuid())
+  ticketId  String
+  role      SupportMessageRole
+  body      String
+  createdAt DateTime           @default(now())
+
+  ticket SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+
+  @@index([ticketId])
+  @@index([ticketId, createdAt])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Tournament {
+  id          String            @id @default(cuid())
+  title       String
+  description String?
+  /** URL или data:image (как у профиля); показывается в списке и на странице турнира. */
+  avatarUrl   String?
+  game        TournamentGame    @default(VALORANT)
+  format      TournamentFormat
+  status      TournamentStatus  @default(DRAFT)
+  /** JSON string[]: WINNER, MVP, FIRST_KILL, HIGHEST_SCORE, EXACT_SCORE. null = все типы активны. */
+  fantasyActivePredictions Json?
+  /** JSON: { pointsWin?, pointsDraw?, pointsLoss?, swissRounds? } */
+  formatConfig Json?
+  createdBy   String
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+
+  creator      User          @relation("TournamentCreator", fields: [createdBy], references: [id], onDelete: Cascade)
+  teams        Team[]
+  matches      Match[]
+  fantasyTeams FantasyTeam[]
+
+  @@index([createdBy])
+  @@index([status])
+  @@index([format])
+  @@index([game])
+}
+
+model Team {
+  id           String @id @default(cuid())
+  name         String
+  logo         String?
+  tournamentId String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+
+  players               Player[]
+  matchesAsA            Match[]                @relation("MatchTeamA")
+  matchesAsB            Match[]                @relation("MatchTeamB")
+  matchesWon            Match[]                @relation("MatchWinner")
+  fantasyTeamSelections FantasyTeamSelection[]
+  fantasyWinnerPredictions         FantasyMatchPrediction[] @relation("FantasyPredWinner")
+  fantasyHighestScorePredictions FantasyMatchPrediction[] @relation("FantasyPredHighestScoreTeam")
+
+  @@unique([tournamentId, name])
+  @@index([tournamentId])
+}
+
+/** Игрок состава (как в реальных esports-ростерах). */
+model Player {
+  id        String   @id @default(cuid())
+  teamId    String
+  nickname  String   @map("ign")
+  realName  String?
+  role      String
+  country   String?
+  avatar    String?  @map("avatarUrl")
+  isStarter Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  team Team @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  mvpMatches       Match[] @relation("MatchMvpPlayer")
+  firstKillMatches Match[] @relation("MatchFirstKillPlayer")
+  fantasyPredAsMvp       FantasyMatchPrediction[] @relation("FantasyPredMvp")
+  fantasyPredAsFirstKill FantasyMatchPrediction[] @relation("FantasyPredFirstKill")
+
+  @@index([teamId])
+}
+
+model Match {
+  id           String  @id @default(cuid())
+  tournamentId String
+  round        Int
+  position     Int
+  teamAId      String?
+  teamBId      String?
+  scoreA       Int?
+  scoreB       Int?
+  winnerId     String?
+  mvpPlayerId       String?
+  firstKillPlayerId String?
+  nextMatchId  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  teamA      Team?      @relation("MatchTeamA", fields: [teamAId], references: [id], onDelete: SetNull)
+  teamB      Team?      @relation("MatchTeamB", fields: [teamBId], references: [id], onDelete: SetNull)
+  winner     Team?      @relation("MatchWinner", fields: [winnerId], references: [id], onDelete: SetNull)
+  mvpPlayer       Player? @relation("MatchMvpPlayer", fields: [mvpPlayerId], references: [id], onDelete: SetNull)
+  firstKillPlayer Player? @relation("MatchFirstKillPlayer", fields: [firstKillPlayerId], references: [id], onDelete: SetNull)
+  nextMatch  Match?     @relation("BracketFeed", fields: [nextMatchId], references: [id], onDelete: SetNull)
+  prevMatches Match[]   @relation("BracketFeed")
+  fantasyMatchPredictions FantasyMatchPrediction[]
+
+  @@index([tournamentId])
+  @@index([tournamentId, round])
+  @@index([nextMatchId])
+  @@index([teamAId])
+  @@index([teamBId])
+  @@index([mvpPlayerId])
+  @@index([firstKillPlayerId])
+}
+
+model FantasyTeam {
+  id           String   @id @default(cuid())
+  userId       String
+  tournamentId String
+  name         String?
+  /** Сумма: rosterPoints + fantasyPredictionPoints + fantasyBonusPoints */
+  points       Int      @default(0)
+  rosterPoints              Int @default(0)
+  fantasyPredictionPoints   Int @default(0)
+  fantasyBonusPoints        Int @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user       User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tournament Tournament             @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  selections FantasyTeamSelection[]
+  matchPredictions FantasyMatchPrediction[]
+
+  @@unique([userId, tournamentId])
+  @@index([userId])
+  @@index([tournamentId])
+  @@index([tournamentId, points])
+}
+
+/** Прогноз пользователя на конкретный матч турнира. */
+model FantasyMatchPrediction {
+  id            String   @id @default(cuid())
+  fantasyTeamId String
+  matchId       String
+  predictedWinnerTeamId         String?
+  predictedMvpPlayerId        String?
+  predictedFirstKillPlayerId  String?
+  predictedHighestScoreTeamId String?
+  predictedScoreA Int?
+  predictedScoreB Int?
+  ptsWinner       Int @default(0)
+  ptsMvp          Int @default(0)
+  ptsFirstKill    Int @default(0)
+  ptsHighestScore Int @default(0)
+  ptsExactScore   Int @default(0)
+  bonusPts        Int @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  fantasyTeam FantasyTeam @relation(fields: [fantasyTeamId], references: [id], onDelete: Cascade)
+  match       Match       @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  predictedWinner         Team?   @relation("FantasyPredWinner", fields: [predictedWinnerTeamId], references: [id], onDelete: SetNull)
+  predictedMvp            Player? @relation("FantasyPredMvp", fields: [predictedMvpPlayerId], references: [id], onDelete: SetNull)
+  predictedFirstKill      Player? @relation("FantasyPredFirstKill", fields: [predictedFirstKillPlayerId], references: [id], onDelete: SetNull)
+  predictedHighestScoreTeam Team? @relation("FantasyPredHighestScoreTeam", fields: [predictedHighestScoreTeamId], references: [id], onDelete: SetNull)
+
+  @@unique([fantasyTeamId, matchId])
+  @@index([matchId])
+  @@index([fantasyTeamId])
+}
+
+model FantasyTeamSelection {
+  id            String   @id @default(cuid())
+  fantasyTeamId String
+  teamId        String
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  fantasyTeam FantasyTeam @relation(fields: [fantasyTeamId], references: [id], onDelete: Cascade)
+  team        Team        @relation(fields: [teamId], references: [id], onDelete: Cascade)
+
+  @@unique([fantasyTeamId, teamId])
+  @@index([teamId])
+  @@index([fantasyTeamId, sortOrder])
+}
+
+/** Виртуальная награда в магазине fantasy points. */
+model Reward {
+  id          String   @id @default(cuid())
+  title       String
+  description String
+  price       Int
+  image       String
+  sortOrder   Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owners UserReward[]
+
+  @@index([sortOrder])
+  @@index([price])
+}
+
+/** Инвентарь пользователя: количество купленных экземпляров награды. */
+model UserReward {
+  id         String   @id @default(cuid())
+  userId     String
+  rewardId   String
+  quantity   Int      @default(1)
+  acquiredAt DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  reward Reward @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, rewardId])
+  @@index([userId])
+  @@index([rewardId])
+}

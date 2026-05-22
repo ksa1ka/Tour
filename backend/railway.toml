@@ -1,0 +1,9 @@
+# https://docs.railway.com/reference/config-as-code
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "npm run start:deploy"
+healthcheckPath = "/health"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"

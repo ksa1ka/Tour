@@ -1,0 +1,1 @@
+-- Расширен enum `TournamentGame` в Prisma; колонка `Tournament.game` уже TEXT в SQLite — изменений схемы не требуется.
