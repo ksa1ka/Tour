@@ -18,13 +18,13 @@ export default {
       },
       boxShadow: {
         glass:
-          '0 0 0 1px hsl(0 0% 100% / 0.08), 0 20px 50px -24px hsl(0 0% 0% / 0.55)',
-        nav: '0 8px 32px -12px hsl(0 0% 0% / 0.5)',
-        glow: '0 0 24px -8px hsl(0 0% 100% / 0.12)',
-        'glow-sm': '0 0 14px -6px hsl(0 0% 100% / 0.08)',
-        'glow-lg': '0 0 36px -10px hsl(0 0% 100% / 0.1)',
-        card: '0 4px 24px -8px hsl(0 0% 0% / 0.45), inset 0 1px 0 0 hsl(0 0% 100% / 0.06)',
-        'inner-glow': 'inset 0 1px 0 0 hsl(0 0% 100% / 0.04)',
+          '0 0 0 1px hsl(var(--primary) / 0.1), 0 16px 40px -20px hsl(250 30% 5% / 0.65)',
+        nav: '0 8px 28px -14px hsl(250 30% 5% / 0.5)',
+        glow: '0 0 24px -8px hsl(288 52% 48% / 0.32)',
+        'glow-sm': '0 0 14px -6px hsl(288 52% 48% / 0.22)',
+        'glow-lg': '0 0 36px -10px hsl(285 48% 52% / 0.38)',
+        card: '0 4px 24px -10px hsl(250 30% 5% / 0.5), inset 0 1px 0 0 hsl(var(--primary) / 0.07)',
+        'inner-glow': 'inset 0 1px 0 0 hsl(var(--primary) / 0.06)',
       },
       colors: {
         background: 'hsl(var(--background))',

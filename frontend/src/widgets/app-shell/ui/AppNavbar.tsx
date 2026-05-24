@@ -7,6 +7,7 @@ import { Link, NavLink, useLocation } from 'react-router-dom'
 
 
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 
 import { useAuth } from '@/context/AuthContext'
 
@@ -16,7 +17,7 @@ import { useLogoutMutation } from '@/features/auth/api/useAuthMutations'
 
 import { ADMIN_ROUTES } from '@/shared/constants/adminRoutes'
 
-import { accountCategoryLabel } from '@/shared/lib/userAccountLabel'
+import { accountCategoryLabel, accountRoleBadgeVariant } from '@/shared/lib/userAccountLabel'
 
 import { cn } from '@/shared/lib/utils'
 
@@ -132,7 +133,7 @@ export function AppNavbar() {
 
                   to="/profile"
 
-                  className="hidden max-w-[10.5rem] items-center gap-2 truncate rounded-md border border-border/90 bg-card/95 px-2 py-1.5 text-xs text-muted-foreground shadow-inner-glow backdrop-blur-sm transition-all duration-200 hover:border-primary/40 hover:text-foreground sm:max-w-[12rem] md:flex lg:max-w-[15rem] lg:px-2.5 lg:py-2 lg:text-sm"
+                  className="hidden max-w-[14rem] items-center gap-2 rounded-md border border-border/90 bg-card/95 px-2 py-1.5 text-xs text-muted-foreground shadow-inner-glow backdrop-blur-sm transition-all duration-200 hover:border-primary/40 hover:text-foreground sm:max-w-[16rem] md:flex lg:max-w-[18rem] lg:px-2.5 lg:py-2 lg:text-sm"
 
                 >
 
@@ -149,14 +150,11 @@ export function AppNavbar() {
                   />
 
                   <span className="min-w-0 truncate">
-
                     {user.displayName?.trim() || user.email}
-
-                    <span className="text-muted-foreground"> · </span>
-
-                    {accountCategoryLabel(user.role)}
-
                   </span>
+                  <Badge variant={accountRoleBadgeVariant(user.role)} className="shrink-0">
+                    {accountCategoryLabel(user.role)}
+                  </Badge>
 
                 </Link>
 

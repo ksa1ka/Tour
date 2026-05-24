@@ -1,4 +1,5 @@
 import type { Request, Response } from 'express'
+import type { UserRole } from '@prisma/client'
 
 import * as adminService from '../services/adminService.js'
 
@@ -10,6 +11,13 @@ export async function getDashboardStats(_req: Request, res: Response) {
 export async function listUsers(_req: Request, res: Response) {
   const users = await adminService.listUsersForAdmin()
   res.json({ users })
+}
+
+export async function updateUserRole(req: Request, res: Response) {
+  const userId = req.params.userId as string
+  const body = req.body as { role: UserRole }
+  const user = await adminService.updateUserRole(userId, body.role)
+  res.json({ user })
 }
 
 export async function listFantasyTeams(_req: Request, res: Response) {

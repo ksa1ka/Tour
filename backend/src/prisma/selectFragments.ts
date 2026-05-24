@@ -37,6 +37,7 @@ export const teamPublicSelect = {
   name: true,
   logo: true,
   tournamentId: true,
+  captainId: true,
   createdAt: true,
   updatedAt: true,
   tournament: {

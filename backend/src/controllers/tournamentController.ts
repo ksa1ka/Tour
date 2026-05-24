@@ -22,7 +22,10 @@ export async function list(req: Request, res: Response, next: NextFunction) {
 
 export async function getById(req: Request, res: Response, next: NextFunction) {
   try {
-    const tournament = await tournamentService.getTournamentById(req.params.id as string)
+    const tournament = await tournamentService.getTournamentDetailForViewer(
+      req.params.id as string,
+      req.userId,
+    )
     if (!tournament) {
       res.status(404).json({ error: 'Tournament not found' })
       return

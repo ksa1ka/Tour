@@ -1,12 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ArrowLeft, Sparkles, Trophy, Users, WifiOff } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import type { Team } from '@/entities/team/model/types'
 import { fetchTournament } from '@/entities/tournament/api/tournamentApi'
 import { RoundRobinPanel } from '@/features/round-robin/ui/RoundRobinPanel'
 import { SwissPanel } from '@/features/swiss/ui/SwissPanel'
@@ -17,12 +16,14 @@ import {
   type TournamentFormatConfig,
 } from '@/entities/tournament/model/types'
 import { formatConfigFromForm } from '@/shared/lib/formatConfigPayload'
+import { TeamEditModal } from '@/features/team-form/ui/TeamEditModal'
 import { TeamForm } from '@/features/team-form/ui/TeamForm'
 import { TeamCard } from '@/features/team-list/ui/TeamCard'
-import { useCreateTeamMutation, useDeleteTeamMutation, useUpdateTeamMutation } from '@/features/team/api/useTeamMutations'
+import { useCreateTeamMutation, useDeleteTeamMutation } from '@/features/team/api/useTeamMutations'
 import { TournamentForm } from '@/features/tournament-form/ui/TournamentForm'
 import { TournamentChatsPanel } from '@/features/chat/ui/TournamentChatsPanel'
 import { useDeleteTournamentMutation, useUpdateTournamentMutation } from '@/features/tournament/api/useTournamentMutations'
+import { CaptainTeamRegistrationPanel } from '@/features/tournament-registration/ui/CaptainTeamRegistrationPanel'
 import { useIsAdmin } from '@/shared/hooks/useIsAdmin'
 import { useTournamentSocketSync } from '@/shared/hooks/useTournamentSocketSync'
 import { getRestErrorMessage } from '@/shared/lib/restErrors'
@@ -40,7 +41,7 @@ export function TournamentDetailPage() {
   const isAdmin = useIsAdmin()
   const { presence, lastEvent } = useTournamentSocketSync(tournamentId ?? null)
   const [editing, setEditing] = useState(false)
-  const [editingTeam, setEditingTeam] = useState<Team | null>(null)
+  const [editingTeamId, setEditingTeamId] = useState<string | null>(null)
   const [serverError, setServerError] = useState<string | null>(null)
 
   const { data, isPending, isError, refetch, isRefetching } = useQuery({
@@ -49,10 +50,15 @@ export function TournamentDetailPage() {
     enabled: Boolean(tournamentId),
   })
 
+  const teams = data?.teams ?? []
+  const editingTeam = useMemo(() => {
+    if (!editingTeamId) return null
+    return teams.find((t) => t.id === editingTeamId) ?? null
+  }, [editingTeamId, teams])
+
   const updateMutation = useUpdateTournamentMutation(tournamentId ?? '')
   const deleteMutation = useDeleteTournamentMutation()
   const createTeamMutation = useCreateTeamMutation(tournamentId ?? '')
-  const updateTeamMutation = useUpdateTeamMutation()
   const deleteTeamMutation = useDeleteTeamMutation()
 
   if (!tournamentId) {
@@ -89,8 +95,6 @@ export function TournamentDetailPage() {
       </PageContainer>
     )
   }
-
-  const teams = data.teams ?? []
 
   async function handleDelete() {
     if (!tournamentId) return
@@ -290,6 +294,10 @@ export function TournamentDetailPage() {
         )}
       </AnimatePresence>
 
+      <div className="mt-8">
+        <CaptainTeamRegistrationPanel tournament={data} />
+      </div>
+
       {(data.format === 'SINGLE_ELIMINATION' ||
         data.format === 'ROUND_ROBIN' ||
         data.format === 'SWISS') && (
@@ -367,96 +375,39 @@ export function TournamentDetailPage() {
         </div>
 
         {isAdmin && !editing ? (
-          <div className="mb-8 grid gap-6 lg:grid-cols-2">
-            <Card className="glass-panel">
-              <CardHeader>
-                <CardTitle className="text-base">Добавить команду</CardTitle>
-                <CardDescription>Название и ссылка на логотип</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <TeamForm
-                  idPrefix={`td-${tournamentId}`}
-                  defaultValues={{ name: '', logo: '' }}
-                  submitLabel="Добавить"
-                  isSubmitting={createTeamMutation.isPending}
-                  onSubmit={async (payload) => {
-                    setServerError(null)
-                    try {
-                      await createTeamMutation.mutateAsync(payload)
-                    } catch (err) {
-                      setServerError(getRestErrorMessage(err))
-                    }
-                  }}
-                />
-              </CardContent>
-            </Card>
+          <Card className="glass-panel mb-8 max-w-lg">
+            <CardHeader>
+              <CardTitle className="text-base">Добавить команду</CardTitle>
+              <CardDescription>Название и ссылка на логотип</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <TeamForm
+                idPrefix={`td-${tournamentId}`}
+                defaultValues={{ name: '', logo: '' }}
+                submitLabel="Добавить"
+                isSubmitting={createTeamMutation.isPending}
+                onSubmit={async (payload) => {
+                  setServerError(null)
+                  try {
+                    await createTeamMutation.mutateAsync(payload)
+                  } catch (err) {
+                    setServerError(getRestErrorMessage(err))
+                  }
+                }}
+              />
+            </CardContent>
+          </Card>
+        ) : null}
 
-            <AnimatePresence mode="wait">
-              {editingTeam ? (
-                <motion.div
-                  key={`edit-${editingTeam.id}`}
-                  layout
-                  initial={{ opacity: 0, x: 12 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  transition={{ ...transition.fast }}
-                >
-                  <Card className="glass-panel">
-                    <CardHeader className="flex flex-row items-start justify-between space-y-0">
-                      <div>
-                        <CardTitle className="text-base">Редактировать «{editingTeam.name}»</CardTitle>
-                        <CardDescription>Логотип — ссылка на изображение</CardDescription>
-                      </div>
-                      <Button type="button" variant="ghost" size="sm" onClick={() => setEditingTeam(null)}>
-                        Закрыть
-                      </Button>
-                    </CardHeader>
-                    <CardContent>
-                      <TeamForm
-                        idPrefix={`td-edit-${editingTeam.id}`}
-                        key={editingTeam.id}
-                        defaultValues={{
-                          name: editingTeam.name,
-                          logo: editingTeam.logo ?? '',
-                        }}
-                        submitLabel="Сохранить команду"
-                        isSubmitting={updateTeamMutation.isPending}
-                        onSubmit={async (payload) => {
-                          setServerError(null)
-                          try {
-                            await updateTeamMutation.mutateAsync({
-                              tournamentId: tournamentId as string,
-                              teamId: editingTeam.id,
-                              payload,
-                            })
-                            setEditingTeam(null)
-                          } catch (err) {
-                            setServerError(getRestErrorMessage(err))
-                          }
-                        }}
-                      />
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ) : (
-                <motion.div
-                  key="team-placeholder"
-                  layout
-                  initial={{ opacity: 0, x: -8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 8 }}
-                  transition={{ ...transition.fast }}
-                >
-                  <Card className="glass-panel flex flex-col justify-center border-dashed border-border bg-muted/15">
-                    <CardContent className="flex flex-col items-center justify-center gap-2 py-10 text-center text-sm text-muted-foreground">
-                      <Users className="h-10 w-10 opacity-50" aria-hidden />
-                      <p>Выберите «Изменить» у карточки команды, чтобы отредактировать её здесь.</p>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+        {isAdmin && !editing ? (
+          <TeamEditModal
+            team={editingTeam}
+            open={editingTeamId !== null}
+            onOpenChange={(open) => {
+              if (!open) setEditingTeamId(null)
+            }}
+            onError={(msg) => setServerError(msg)}
+          />
         ) : null}
 
         {teams.length === 0 ? (
@@ -477,8 +428,7 @@ export function TournamentDetailPage() {
                 <TeamCard
                   team={team}
                   isAdmin={isAdmin && !editing}
-                  onRosterError={(msg) => setServerError(msg)}
-                  onEdit={isAdmin && !editing ? (t) => setEditingTeam(t) : undefined}
+                  onEdit={isAdmin && !editing ? (t) => setEditingTeamId(t.id) : undefined}
                   onDelete={
                     isAdmin && !editing
                       ? (t) => {

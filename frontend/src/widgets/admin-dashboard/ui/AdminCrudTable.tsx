@@ -54,7 +54,7 @@ export function AdminCrudTable<T>({
   }
 
   return (
-    <div className="min-w-0 overflow-hidden rounded-lg border border-border bg-card shadow-inner shadow-black/10">
+    <div className="min-w-0 overflow-hidden rounded-lg border border-border bg-card shadow-inner shadow-black/20">
       <Table>
         {caption ? <caption className="caption-top border-b border-border px-4 py-3 text-left text-sm text-muted-foreground">{caption}</caption> : null}
         <TableHeader>

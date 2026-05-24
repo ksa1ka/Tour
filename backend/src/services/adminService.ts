@@ -1,6 +1,6 @@
 import { TournamentStatus, UserRole } from '@prisma/client'
 
-import { NotFoundError } from '../errors/HttpError.js'
+import { BadRequestError, NotFoundError } from '../errors/HttpError.js'
 import { prisma } from '../prisma/client.js'
 
 const ACTIVE_TOURNAMENT_STATUSES: TournamentStatus[] = [
@@ -283,6 +283,70 @@ export type AdminShopRewardListItem = {
   sortOrder: number
 }
 
+function mapAdminUserListItem(r: {
+  id: string
+  email: string
+  role: UserRole
+  displayName: string | null
+  fantasyPointsBalance: number
+  createdAt: Date
+}): AdminUserListItem {
+  return {
+    ...r,
+    role: r.role,
+    createdAt: r.createdAt.toISOString(),
+  }
+}
+
+export async function updateUserRole(targetUserId: string, newRole: UserRole): Promise<AdminUserListItem> {
+  const target = await prisma.user.findUnique({
+    where: { id: targetUserId },
+    select: { id: true, role: true },
+  })
+  if (!target) {
+    throw new NotFoundError('Пользователь не найден')
+  }
+
+  if (target.role === newRole) {
+    const unchanged = await prisma.user.findUniqueOrThrow({
+      where: { id: targetUserId },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        displayName: true,
+        fantasyPointsBalance: true,
+        createdAt: true,
+      },
+    })
+    return mapAdminUserListItem(unchanged)
+  }
+
+  if (target.role === UserRole.ADMIN && newRole !== UserRole.ADMIN) {
+    const adminCount = await prisma.user.count({ where: { role: UserRole.ADMIN } })
+    if (adminCount <= 1) {
+      throw new BadRequestError('Нельзя снять роль у последнего администратора')
+    }
+  }
+
+  const updated = await prisma.user.update({
+    where: { id: targetUserId },
+    data: { role: newRole },
+    select: {
+      id: true,
+      email: true,
+      role: true,
+      displayName: true,
+      fantasyPointsBalance: true,
+      createdAt: true,
+    },
+  })
+
+  await prisma.refreshToken.deleteMany({ where: { userId: targetUserId } })
+
+  return mapAdminUserListItem(updated)
+}
+
 export async function listUsersForAdmin(): Promise<AdminUserListItem[]> {
   const rows = await prisma.user.findMany({
     select: {
@@ -295,10 +359,7 @@ export async function listUsersForAdmin(): Promise<AdminUserListItem[]> {
     },
     orderBy: { createdAt: 'desc' },
   })
-  return rows.map((r) => ({
-    ...r,
-    createdAt: r.createdAt.toISOString(),
-  }))
+  return rows.map(mapAdminUserListItem)
 }
 
 export async function listFantasyTeamsForAdmin(): Promise<AdminFantasyTeamListItem[]> {

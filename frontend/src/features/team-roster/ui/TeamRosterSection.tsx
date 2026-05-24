@@ -1,4 +1,4 @@
-import { Trash2, Users } from 'lucide-react'
+import { Pencil, Trash2, Users } from 'lucide-react'
 import { useMemo, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -22,6 +22,9 @@ type TeamRosterSectionProps = {
     addPending: boolean
     onRemove: (playerId: string) => Promise<void>
     removePendingId: string | null
+    onEdit?: (player: Player) => void
+    editingPlayerId?: string | null
+    hideAddForm?: boolean
   }
 }
 
@@ -57,35 +60,57 @@ export function TeamRosterSection({ teamName, players, className, rosterAdmin }:
               <div className="min-w-0 flex-1">
                 <PlayerCard
                   player={p}
+                  className={rosterAdmin?.editingPlayerId === p.id ? 'ring-2 ring-primary/50' : undefined}
                   onClick={(pl) => {
+                    if (rosterAdmin?.onEdit) {
+                      rosterAdmin.onEdit(pl)
+                      return
+                    }
                     setSelected(pl)
                     setOpen(true)
                   }}
                 />
               </div>
               {rosterAdmin ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 shrink-0 self-center text-destructive hover:bg-destructive/10 hover:text-destructive"
-                  title="Удалить из состава"
-                  disabled={rosterAdmin.removePendingId === p.id}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    if (!window.confirm(`Удалить игрока «${p.nickname}» из состава?`)) return
-                    void rosterAdmin.onRemove(p.id)
-                  }}
-                >
-                  <Trash2 className="h-4 w-4" aria-hidden />
-                </Button>
+                <div className="flex shrink-0 items-center gap-0.5 self-center">
+                  {rosterAdmin.onEdit ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-9 w-9"
+                      title="Редактировать игрока"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        rosterAdmin.onEdit?.(p)
+                      }}
+                    >
+                      <Pencil className="h-4 w-4" aria-hidden />
+                    </Button>
+                  ) : null}
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                    title="Удалить из состава"
+                    disabled={rosterAdmin.removePendingId === p.id}
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      if (!window.confirm(`Удалить игрока «${p.nickname}» из состава?`)) return
+                      void rosterAdmin.onRemove(p.id)
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" aria-hidden />
+                  </Button>
+                </div>
               ) : null}
             </div>
           ))}
         </div>
       )}
 
-      {rosterAdmin ? (
+      {rosterAdmin && !rosterAdmin.hideAddForm ? (
         <PlayerForm
           idPrefix={rosterAdmin.formIdPrefix}
           isSubmitting={rosterAdmin.addPending}

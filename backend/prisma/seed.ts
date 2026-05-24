@@ -375,6 +375,18 @@ async function main() {
 
   await db.user.create({
     data: {
+      email: 'admin2@example.com',
+      password: passwordHash,
+      role: UserRole.ADMIN,
+      displayName: 'Co-Admin',
+      bio: 'Второй администратор платформы.',
+      avatarUrl: playerAvatarUrl('admin2'),
+      fantasyPointsBalance: 10_000,
+    },
+  })
+
+  await db.user.create({
+    data: {
       email: 'viewer@example.com',
       password: passwordHash,
       role: UserRole.VIEWER,
@@ -382,6 +394,18 @@ async function main() {
       bio: 'Аккаунт зрителя для тестов.',
       avatarUrl: playerAvatarUrl('viewer'),
       fantasyPointsBalance: 4800,
+    },
+  })
+
+  await db.user.create({
+    data: {
+      email: 'player@example.com',
+      password: passwordHash,
+      role: UserRole.PLAYER,
+      displayName: 'Игрок',
+      bio: 'Аккаунт игрока: можно регистрироваться на турниры.',
+      avatarUrl: playerAvatarUrl('player'),
+      fantasyPointsBalance: 5000,
     },
   })
 
@@ -446,7 +470,13 @@ async function main() {
 
   const played = await db.match.count({ where: { winnerId: { not: null } } })
 
-  console.log('Seed OK. Login:', { admin: 'admin@example.com', viewer: 'viewer@example.com', password: PASSWORD })
+  console.log('Seed OK. Login:', {
+    admin: 'admin@example.com',
+    admin2: 'admin2@example.com',
+    viewer: 'viewer@example.com',
+    player: 'player@example.com',
+    password: PASSWORD,
+  })
   console.log(
     'Tournaments:',
     await db.tournament.count(),

@@ -21,6 +21,7 @@ export type Team = {
   name: string
   logo: string | null
   tournamentId: string
+  captainId: string | null
   createdAt: string
   updatedAt: string
   tournament: TeamTournamentRef

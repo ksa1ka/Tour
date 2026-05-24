@@ -1,13 +1,20 @@
 import { motion } from 'framer-motion'
 import { RefreshCw } from 'lucide-react'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+import { toast } from 'sonner'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useAuth } from '@/context/AuthContext'
 import { useAdminUsersQuery } from '@/features/admin/api/useAdminUsersQuery'
-import { accountCategoryLabel } from '@/shared/lib/userAccountLabel'
+import { useUpdateAdminUserRoleMutation } from '@/features/admin/api/useUpdateAdminUserRoleMutation'
+import {
+  accountCategoryLabel,
+  accountRoleBadgeVariant,
+} from '@/shared/lib/userAccountLabel'
+import { getRestErrorMessage } from '@/shared/lib/restErrors'
+import { cn } from '@/shared/lib/utils'
 import { PageLoader } from '@/shared/ui/PageLoader'
 import { AdminCrudTable, type AdminTableColumn } from '@/widgets/admin-dashboard/ui/AdminCrudTable'
 
@@ -20,9 +27,50 @@ type Row = {
   createdAt: string
 }
 
+const ROLE_OPTIONS = [
+  { value: 'VIEWER', label: 'Зритель' },
+  { value: 'PLAYER', label: 'Игрок' },
+  { value: 'ADMIN', label: 'Администратор' },
+] as const
+
+function RoleSelect({
+  userId,
+  role,
+  disabled,
+  onChange,
+}: {
+  userId: string
+  role: string
+  disabled: boolean
+  onChange: (userId: string, role: string) => void
+}) {
+  return (
+    <select
+      id={`role-${userId}`}
+      value={role}
+      disabled={disabled}
+      aria-label="Роль пользователя"
+      className={cn(
+        'h-9 min-w-[9.5rem] rounded-md border border-border bg-background px-2.5 text-sm text-foreground',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background',
+        'disabled:cursor-not-allowed disabled:opacity-50',
+      )}
+      onChange={(e) => onChange(userId, e.target.value)}
+    >
+      {ROLE_OPTIONS.map((opt) => (
+        <option key={opt.value} value={opt.value}>
+          {opt.label}
+        </option>
+      ))}
+    </select>
+  )
+}
+
 export function AdminUsersPage() {
-  const { user } = useAuth()
+  const { user, mergeUser } = useAuth()
   const { data: users, isPending, isError, error, refetch, isFetching } = useAdminUsersQuery(user?.role === 'ADMIN')
+  const roleMutation = useUpdateAdminUserRoleMutation()
+  const [updatingUserId, setUpdatingUserId] = useState<string | null>(null)
 
   const rows: Row[] = useMemo(() => {
     if (!users) return []
@@ -43,6 +91,29 @@ export function AdminUsersPage() {
     return { total: rows.length, admins, viewers, players }
   }, [rows])
 
+  const handleRoleChange = (targetUserId: string, nextRole: string) => {
+    if (nextRole === rows.find((r) => r.id === targetUserId)?.role) return
+
+    setUpdatingUserId(targetUserId)
+    roleMutation.mutate(
+      { userId: targetUserId, role: nextRole },
+      {
+        onSuccess: (updated) => {
+          toast.success('Роль обновлена', {
+            description: `${updated.email} — ${accountCategoryLabel(updated.role)}`,
+          })
+          if (user?.id === updated.id && updated.role !== user.role) {
+            mergeUser({ role: updated.role as typeof user.role })
+          }
+        },
+        onError: (err) => {
+          toast.error(getRestErrorMessage(err, 'Не удалось изменить роль'))
+        },
+        onSettled: () => setUpdatingUserId(null),
+      },
+    )
+  }
+
   const columns: AdminTableColumn<Row>[] = [
     { id: 'email', header: 'Email', cell: (r) => <span className="font-medium text-foreground">{r.email}</span> },
     {
@@ -54,7 +125,19 @@ export function AdminUsersPage() {
       id: 'category',
       header: 'Категория',
       cell: (r) => (
-        <Badge variant={r.role === 'ADMIN' ? 'default' : 'secondary'}>{accountCategoryLabel(r.role)}</Badge>
+        <Badge variant={accountRoleBadgeVariant(r.role)}>{accountCategoryLabel(r.role)}</Badge>
+      ),
+    },
+    {
+      id: 'role',
+      header: 'Назначить роль',
+      cell: (r) => (
+        <RoleSelect
+          userId={r.id}
+          role={r.role}
+          disabled={updatingUserId === r.id || roleMutation.isPending}
+          onChange={handleRoleChange}
+        />
       ),
     },
     {
@@ -79,32 +162,34 @@ export function AdminUsersPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Пользователи</p>
-          <h1 className="mt-1 text-2xl font-bold tracking-tight">Зарегистрированные аккаунты</h1>
-          <p className="mt-2 max-w-xl text-sm text-muted-foreground">
-            Список из базы данных: зритель и игрок задаются при регистрации, отдельно от прав администратора.
-          </p>
-        </motion.div>
-        <Button
-          type="button"
-          variant="outline"
-          className="shrink-0 gap-2"
-          disabled={isFetching}
-          onClick={() => void refetch()}
-        >
-          <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
-          Обновить
-        </Button>
-      </div>
+    <motion.div className="space-y-6">
+      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Пользователи</p>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight">Зарегистрированные аккаунты</h1>
+            <p className="mt-2 max-w-xl text-sm text-muted-foreground">
+              Назначайте роль «Администратор» любому пользователю — админов на платформе может быть несколько.
+            </p>
+          </motion.div>
+          <Button
+            type="button"
+            variant="outline"
+            className="shrink-0 gap-2"
+            disabled={isFetching}
+            onClick={() => void refetch()}
+          >
+            <RefreshCw className={`h-4 w-4 ${isFetching ? 'animate-spin' : ''}`} />
+            Обновить
+          </Button>
+        </div>
+      </motion.div>
 
       {isError ? (
         <p className="text-sm text-destructive">{error instanceof Error ? error.message : 'Не удалось загрузить список'}</p>
       ) : null}
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <motion.div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <Card className="border-border bg-card">
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Всего</CardTitle>
@@ -127,9 +212,9 @@ export function AdminUsersPage() {
           <CardHeader className="pb-2">
             <CardTitle className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Админы</CardTitle>
           </CardHeader>
-          <CardContent className="text-2xl font-bold text-foreground">{isPending ? '…' : stats.admins}</CardContent>
+          <CardContent className="text-2xl font-bold text-primary">{isPending ? '…' : stats.admins}</CardContent>
         </Card>
-      </div>
+      </motion.div>
 
       {isPending ? (
         <PageLoader message="Загрузка пользователей…" />
@@ -142,6 +227,6 @@ export function AdminUsersPage() {
           emptyLabel="Пользователей пока нет"
         />
       )}
-    </div>
+    </motion.div>
   )
 }

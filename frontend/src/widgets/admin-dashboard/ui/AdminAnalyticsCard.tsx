@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import type { LucideIcon } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/shared/lib/utils'
@@ -13,6 +14,7 @@ type AdminAnalyticsCardProps = {
   loading?: boolean
   className?: string
   delay?: number
+  to?: string
 }
 
 export function AdminAnalyticsCard({
@@ -24,18 +26,13 @@ export function AdminAnalyticsCard({
   loading = false,
   className,
   delay = 0,
+  to,
 }: AdminAnalyticsCardProps) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay }}
-      whileHover={{ y: -2 }}
-      className="h-full"
-    >
+  const card = (
       <Card
         className={cn(
           'group h-full overflow-hidden border-primary/10 bg-card/80 shadow-glow-sm transition-all duration-300 hover:border-primary/25 hover:shadow-glow',
+          to && 'cursor-pointer',
           className,
         )}
       >
@@ -68,6 +65,23 @@ export function AdminAnalyticsCard({
           ) : null}
         </CardContent>
       </Card>
+  )
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.4, delay }}
+      whileHover={{ y: -2 }}
+      className="h-full"
+    >
+      {to ? (
+        <Link to={to} className="block h-full rounded-xl outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background">
+          {card}
+        </Link>
+      ) : (
+        card
+      )}
     </motion.div>
   )
 }

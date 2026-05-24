@@ -6,9 +6,7 @@ import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import type { Team } from '@/entities/team/model/types'
-import { useAddPlayerMutation, useRemovePlayerMutation } from '@/features/team/api/usePlayerMutations'
 import { TeamRosterSection } from '@/features/team-roster/ui/TeamRosterSection'
-import { getRestErrorMessage } from '@/shared/lib/restErrors'
 import { transition } from '@/shared/lib/motion'
 import { cn } from '@/shared/lib/utils'
 import { SafeImage } from '@/shared/ui/SafeImage'
@@ -18,18 +16,14 @@ type TeamCardProps = {
   isAdmin?: boolean
   onEdit?: (team: Team) => void
   onDelete?: (team: Team) => void
-  /** Ошибки добавления/удаления игроков (например setServerError со страницы) */
-  onRosterError?: (message: string) => void
   className?: string
 }
 
-export function TeamCard({ team, isAdmin, onEdit, onDelete, onRosterError, className }: TeamCardProps) {
+export function TeamCard({ team, isAdmin, onEdit, onDelete, className }: TeamCardProps) {
   const [logoFailed, setLogoFailed] = useState(false)
   const showLogo = team.logo && !logoFailed
   const [rosterOpen, setRosterOpen] = useState(false)
-  const addPlayerMutation = useAddPlayerMutation(team.tournamentId)
-  const removePlayerMutation = useRemovePlayerMutation(team.tournamentId)
-  const showRosterBlock = (team.players?.length ?? 0) > 0 || (isAdmin && Boolean(onEdit ?? onDelete))
+  const showRosterBlock = (team.players?.length ?? 0) > 0
 
   return (
     <motion.div
@@ -94,35 +88,7 @@ export function TeamCard({ team, isAdmin, onEdit, onDelete, onRosterError, class
               <span className="font-semibold">Состав</span>
               <span className="text-muted-foreground">{rosterOpen ? 'Скрыть' : 'Показать'}</span>
             </Button>
-            {rosterOpen ? (
-              <TeamRosterSection
-                teamName={team.name}
-                players={team.players ?? []}
-                rosterAdmin={
-                  isAdmin && (onEdit ?? onDelete)
-                    ? {
-                        formIdPrefix: `team-${team.id}-pl`,
-                        addPending: addPlayerMutation.isPending,
-                        removePendingId: removePlayerMutation.isPending ? removePlayerMutation.variables?.playerId ?? null : null,
-                        onAdd: async (payload) => {
-                          try {
-                            await addPlayerMutation.mutateAsync({ teamId: team.id, payload })
-                          } catch (err) {
-                            onRosterError?.(getRestErrorMessage(err))
-                          }
-                        },
-                        onRemove: async (playerId) => {
-                          try {
-                            await removePlayerMutation.mutateAsync({ teamId: team.id, playerId })
-                          } catch (err) {
-                            onRosterError?.(getRestErrorMessage(err))
-                          }
-                        },
-                      }
-                    : undefined
-                }
-              />
-            ) : null}
+            {rosterOpen ? <TeamRosterSection teamName={team.name} players={team.players ?? []} /> : null}
           </CardContent>
         ) : null}
         {isAdmin && (onEdit || onDelete) ? (

@@ -21,6 +21,8 @@ export type CreatePlayerPayload = {
   isStarter?: boolean
 }
 
+export type UpdatePlayerPayload = Partial<CreatePlayerPayload>
+
 export const teamService = {
   list(params?: { tournamentId?: string }) {
     const search = params?.tournamentId ? `?tournamentId=${encodeURIComponent(params.tournamentId)}` : ''
@@ -54,6 +56,12 @@ export const teamService = {
   removePlayer(tournamentId: string, teamId: string, playerId: string) {
     return api
       .delete<{ team: Team }>(`/tournaments/${tournamentId}/teams/${teamId}/players/${playerId}`)
+      .then((r) => r.data.team)
+  },
+
+  updatePlayer(tournamentId: string, teamId: string, playerId: string, payload: UpdatePlayerPayload) {
+    return api
+      .patch<{ team: Team }>(`/tournaments/${tournamentId}/teams/${teamId}/players/${playerId}`, payload)
       .then((r) => r.data.team)
   },
 }

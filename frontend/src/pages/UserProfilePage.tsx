@@ -1,11 +1,16 @@
 import { motion } from 'framer-motion'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Shield } from 'lucide-react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/context/AuthContext'
 import { useUserProfileQuery } from '@/features/profile/api/useUserProfileQuery'
-import { accountCategoryLabel } from '@/shared/lib/userAccountLabel'
+import {
+  accountCategoryLabel,
+  accountRoleBadgeVariant,
+  isAdminRole,
+} from '@/shared/lib/userAccountLabel'
 import { PageContainer } from '@/shared/ui/PageContainer'
 import { PageLoader } from '@/shared/ui/PageLoader'
 import { FantasyEntriesPanel } from '@/widgets/profile-stats/ui/FantasyEntriesPanel'
@@ -78,9 +83,15 @@ export function UserProfilePage() {
             className="ring-2 ring-border"
           />
           <div className="min-w-0 flex-1 space-y-2">
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">
-              Категория: {accountCategoryLabel(profile.role)}
-            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant={accountRoleBadgeVariant(profile.role)}>{accountCategoryLabel(profile.role)}</Badge>
+              {isAdminRole(profile.role) ? (
+                <Badge variant="outline" className="gap-1 border-primary/30 text-primary">
+                  <Shield className="h-3 w-3" aria-hidden />
+                  Администратор платформы
+                </Badge>
+              ) : null}
+            </div>
             <p className="text-xs text-muted-foreground">
               На платформе с {new Date(profile.memberSince).toLocaleDateString('ru-RU')}
             </p>

@@ -119,6 +119,7 @@ export function AdminDashboardPage() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-3 xl:grid-cols-3">
         <AdminAnalyticsCard
           title="Пользователи"
+          to={ADMIN_ROUTES.users}
           value={stats ? formatAdminCount(stats.users.total) : '—'}
           hint={
             stats
@@ -132,6 +133,7 @@ export function AdminDashboardPage() {
         />
         <AdminAnalyticsCard
           title="Турниры"
+          to={ADMIN_ROUTES.tournaments}
           value={stats ? formatAdminCount(stats.tournaments.total) : '—'}
           hint={
             stats
@@ -152,6 +154,7 @@ export function AdminDashboardPage() {
         />
         <AdminAnalyticsCard
           title="Матчи"
+          to={ADMIN_ROUTES.matches}
           value={stats ? formatAdminCount(stats.matches.total) : '—'}
           hint={
             stats
@@ -172,6 +175,7 @@ export function AdminDashboardPage() {
         />
         <AdminAnalyticsCard
           title="Команды"
+          to={ADMIN_ROUTES.teams}
           value={stats ? formatAdminCount(stats.teams.total) : '—'}
           hint="все турнирные составы"
           icon={UsersRound}
@@ -180,6 +184,7 @@ export function AdminDashboardPage() {
         />
         <AdminAnalyticsCard
           title="Фэнтези"
+          to={ADMIN_ROUTES.fantasyLeague}
           value={stats ? formatAdminCount(stats.fantasy.fantasyTeams) : '—'}
           hint={
             stats
@@ -193,6 +198,7 @@ export function AdminDashboardPage() {
         />
         <AdminAnalyticsCard
           title="Магазин"
+          to={ADMIN_ROUTES.shopPurchases}
           value={stats ? formatAdminCount(stats.shop.purchases) : '—'}
           hint={
             stats

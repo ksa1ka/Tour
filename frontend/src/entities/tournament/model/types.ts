@@ -43,6 +43,8 @@ export type TournamentCreator = {
 
 export type FantasyPredictionType = 'WINNER' | 'MVP' | 'FIRST_KILL' | 'HIGHEST_SCORE' | 'EXACT_SCORE'
 
+import type { Team } from '@/entities/team/model/types'
+
 export type Tournament = {
   id: string
   title: string
@@ -58,13 +60,13 @@ export type Tournament = {
   creator: TournamentCreator
 }
 
-import type { Team } from '@/entities/team/model/types'
-
 export type TournamentDetail = Tournament & {
   _count: {
     teams: number
     matches: number
   }
+  /** Команда текущего пользователя-капитана на этом турнире (null — нет заявки). */
+  myTeam: Team | null
   /** Полные карточки команд с составом (как в GET /teams?…). */
   teams: Team[]
 }

@@ -149,6 +149,7 @@ export function TournamentList({
             whileTap={{ scale: 0.995 }}
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
           >
+            <Link to={tournamentHref(t.id)} className="block h-full rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">
             <Card className="glass-panel group h-full overflow-hidden border-primary/10 transition-all duration-300 hover:border-primary/30 hover:shadow-glow">
               <span className="pointer-events-none absolute inset-x-0 top-0 h-px bg-primary/45 opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
               <div className="relative h-32 w-full border-b border-border/80 bg-muted/20">
@@ -169,11 +170,12 @@ export function TournamentList({
                 <p className="line-clamp-3 flex-1 text-sm leading-relaxed text-muted-foreground sm:line-clamp-2">
                   {t.description ?? 'Без описания'}
                 </p>
-                <Button asChild variant="neon" size="sm" className="w-full shrink-0 sm:w-auto">
-                  <Link to={tournamentHref(t.id)}>{actionLabel}</Link>
-                </Button>
+                <span className="inline-flex h-8 w-full shrink-0 items-center justify-center rounded-md bg-primary px-3 text-xs font-medium text-primary-foreground shadow sm:w-auto">
+                  {actionLabel}
+                </span>
               </CardContent>
             </Card>
+            </Link>
           </motion.div>
         </motion.li>
       ))}

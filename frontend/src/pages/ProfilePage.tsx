@@ -1,10 +1,15 @@
 import { motion } from 'framer-motion'
-import { Settings } from 'lucide-react'
+import { Settings, Shield } from 'lucide-react'
 import { Link } from 'react-router-dom'
 
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { useAuth } from '@/context/AuthContext'
-import { accountCategoryLabel } from '@/shared/lib/userAccountLabel'
+import {
+  accountCategoryLabel,
+  accountRoleBadgeVariant,
+  isAdminRole,
+} from '@/shared/lib/userAccountLabel'
 import { useProfileQuery } from '@/features/profile/api/useProfileQuery'
 import { PageContainer } from '@/shared/ui/PageContainer'
 import { PageLoader } from '@/shared/ui/PageLoader'
@@ -65,15 +70,21 @@ export function ProfilePage() {
             size="lg"
             className="ring-2 ring-border"
           />
-          <div className="min-w-0 flex-1 space-y-2">
+          <motion.div className="min-w-0 flex-1 space-y-2">
             <p className="text-sm text-muted-foreground">{user.email}</p>
-            <p className="text-xs uppercase tracking-wider text-muted-foreground">
-              Категория: {accountCategoryLabel(user.role)}
-            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant={accountRoleBadgeVariant(user.role)}>{accountCategoryLabel(user.role)}</Badge>
+              {isAdminRole(user.role) ? (
+                <Badge variant="outline" className="gap-1 border-primary/30 text-primary">
+                  <Shield className="h-3 w-3" aria-hidden />
+                  Доступ к админ-панели
+                </Badge>
+              ) : null}
+            </div>
             <p className="text-xs text-muted-foreground">
               На платформе с {new Date(profile.memberSince).toLocaleDateString('ru-RU')}
             </p>
-          </div>
+          </motion.div>
         </div>
 
         <section className="space-y-3">

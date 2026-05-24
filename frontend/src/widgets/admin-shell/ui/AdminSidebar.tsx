@@ -95,7 +95,7 @@ export function AdminSidebar({ className, onNavigate, variant = 'rail' }: AdminS
         'flex w-56 shrink-0 flex-col lg:w-60',
         isDrawer
           ? 'border-0 bg-transparent'
-          : 'hidden rounded-none border-y-0 border-l-0 border-r border-border/90 bg-card/90 shadow-[1px_0_0_0_hsl(0_0%_100%/0.65)_inset] backdrop-blur-xl md:flex',
+          : 'hidden rounded-none border-y-0 border-l-0 border-r border-border/90 bg-card/90 shadow-[1px_0_0_0_hsl(var(--primary)/0.08)_inset] backdrop-blur-xl md:flex',
         className,
       )}
     >

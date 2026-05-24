@@ -59,14 +59,6 @@ export function HomePage() {
 
   return (
     <div className="relative mx-auto max-w-6xl px-[max(1rem,env(safe-area-inset-left))] py-12 pr-[max(1rem,env(safe-area-inset-right))] sm:px-6 lg:px-8 lg:py-16">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-x-0 top-0 -z-10 mx-auto h-[min(42rem,85vh)] max-w-5xl opacity-90"
-      >
-        <div className="absolute left-[8%] top-8 h-72 w-72 rounded-full bg-white/[0.04] blur-[100px]" />
-        <div className="absolute right-[5%] top-24 h-64 w-64 rounded-full bg-white/[0.03] blur-[90px]" />
-        <div className="absolute bottom-0 left-1/2 h-48 w-[min(90%,48rem)] -translate-x-1/2 rounded-[100%] bg-white/[0.025] blur-[80px]" />
-      </div>
       <div className="grid gap-10 lg:grid-cols-3 lg:items-start">
         <motion.div
           initial={{ opacity: 0, y: 16 }}
@@ -85,7 +77,7 @@ export function HomePage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.06, duration: 0.4, ease: EASE_OUT }}
-          className="overflow-hidden rounded-xl border border-border/90 bg-black/50 shadow-lg shadow-black/20 ring-1 ring-white/[0.06]"
+          className="overflow-hidden rounded-lg border border-border/90 bg-card shadow-lg shadow-black/30 ring-1 ring-primary/20"
         >
           <div className="aspect-video w-full max-w-4xl">
             <video

@@ -1,7 +1,8 @@
 import type { Prisma, TournamentFormat, TournamentGame, TournamentStatus } from '@prisma/client'
 
 import { prisma } from '../prisma/client.js'
-import { teamPublicSelect } from '../prisma/selectFragments.js'
+import { teamPublicSelect, type TeamPublic } from '../prisma/selectFragments.js'
+import { findCaptainTeam } from './captainTeamService.js'
 
 const tournamentPublicSelect = {
   id: true,
@@ -34,6 +35,10 @@ const tournamentDetailSelect = {
 export type TournamentPublic = Prisma.TournamentGetPayload<{ select: typeof tournamentPublicSelect }>
 export type TournamentDetail = Prisma.TournamentGetPayload<{ select: typeof tournamentDetailSelect }>
 
+export type TournamentDetailForViewer = TournamentDetail & {
+  myTeam: TeamPublic | null
+}
+
 function normalizeDescription(value: string | null | undefined): string | null {
   if (value === undefined || value === null) return null
   const t = value.trim()
@@ -59,6 +64,21 @@ export async function getTournamentById(id: string): Promise<TournamentDetail | 
     where: { id },
     select: tournamentDetailSelect,
   })
+}
+
+export async function getTournamentDetailForViewer(
+  id: string,
+  viewerUserId?: string,
+): Promise<TournamentDetailForViewer | null> {
+  const tournament = await getTournamentById(id)
+  if (!tournament) return null
+
+  if (!viewerUserId) {
+    return { ...tournament, myTeam: null }
+  }
+
+  const myTeam = await findCaptainTeam(id, viewerUserId)
+  return { ...tournament, myTeam }
 }
 
 export async function tournamentExists(id: string): Promise<boolean> {

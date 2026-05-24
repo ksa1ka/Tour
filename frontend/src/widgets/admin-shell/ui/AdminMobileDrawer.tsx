@@ -17,7 +17,7 @@ export function AdminMobileDrawer({ open, onClose }: AdminMobileDrawerProps) {
         <>
           <motion.button
             type="button"
-            className="fixed inset-0 z-40 bg-black/70 md:hidden"
+            className="fixed inset-0 z-40 bg-black/65 backdrop-blur-sm md:hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

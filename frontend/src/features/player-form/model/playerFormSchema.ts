@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+import type { Player } from '@/entities/team/model/types'
 import { isAllowedImageSrc } from '@/shared/lib/imageUrl'
 
 const imageFieldMessage = 'Укажите ссылку на изображение (начинается с https://)'
@@ -19,6 +20,17 @@ export const playerFormSchema = z.object({
 })
 
 export type PlayerFormValues = z.infer<typeof playerFormSchema>
+
+export function playerFormValuesFromPlayer(player: Player): PlayerFormValues {
+  return {
+    nickname: player.nickname,
+    role: player.role,
+    realName: player.realName ?? '',
+    country: player.country ?? '',
+    avatar: player.avatar ?? '',
+    rosterSlot: player.isStarter ? 'starter' : 'sub',
+  }
+}
 
 export function playerPayloadFromForm(values: PlayerFormValues) {
   const realName = values.realName?.trim()

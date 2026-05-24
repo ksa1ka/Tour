@@ -1,6 +1,11 @@
 import { teamService } from '@/shared/api/services/teamService'
 
-export type { CreatePlayerPayload, CreateTeamPayload, UpdateTeamPayload } from '@/shared/api/services/teamService'
+export type {
+  CreatePlayerPayload,
+  CreateTeamPayload,
+  UpdatePlayerPayload,
+  UpdateTeamPayload,
+} from '@/shared/api/services/teamService'
 
 export const fetchTeams = (params?: { tournamentId?: string }) => teamService.list(params)
 
@@ -15,3 +20,5 @@ export const deleteTeam = teamService.remove.bind(teamService)
 export const addPlayerToTeam = teamService.addPlayer.bind(teamService)
 
 export const removePlayerFromTeam = teamService.removePlayer.bind(teamService)
+
+export const updatePlayerInTeam = teamService.updatePlayer.bind(teamService)

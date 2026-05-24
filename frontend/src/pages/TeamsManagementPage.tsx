@@ -9,9 +9,10 @@ import { NativeSelectField } from '@/shared/ui/NativeSelectField'
 import { fetchTournaments } from '@/entities/tournament/api/tournamentApi'
 import { fetchTeams } from '@/entities/team/api/teamApi'
 import type { Team } from '@/entities/team/model/types'
+import { TeamEditModal } from '@/features/team-form/ui/TeamEditModal'
 import { TeamForm } from '@/features/team-form/ui/TeamForm'
 import { TeamCard } from '@/features/team-list/ui/TeamCard'
-import { useCreateTeamMutation, useDeleteTeamMutation, useUpdateTeamMutation } from '@/features/team/api/useTeamMutations'
+import { useCreateTeamMutation, useDeleteTeamMutation } from '@/features/team/api/useTeamMutations'
 import { getRestErrorMessage } from '@/shared/lib/restErrors'
 import { EmptyState } from '@/shared/ui/EmptyState'
 import { PageContainer } from '@/shared/ui/PageContainer'
@@ -22,7 +23,7 @@ export function TeamsManagementPage() {
   const [filterTournamentId, setFilterTournamentId] = useState<string>('')
   const [createTournamentId, setCreateTournamentId] = useState<string>('')
   const [creating, setCreating] = useState(false)
-  const [editingTeam, setEditingTeam] = useState<Team | null>(null)
+  const [editingTeamId, setEditingTeamId] = useState<string | null>(null)
   const [serverError, setServerError] = useState<string | null>(null)
 
   const tournamentsQuery = useQuery({
@@ -37,12 +38,15 @@ export function TeamsManagementPage() {
 
   const createMutation = useCreateTeamMutation(createTournamentId)
   const deleteMutation = useDeleteTeamMutation()
-  const updateMutation = useUpdateTeamMutation()
-
   const tournamentOptions = useMemo(
     () => (tournamentsQuery.data ?? []).map((t) => ({ id: t.id, title: t.title })),
     [tournamentsQuery.data],
   )
+
+  const editingTeam = useMemo(() => {
+    if (!editingTeamId) return null
+    return (teamsQuery.data ?? []).find((t) => t.id === editingTeamId) ?? null
+  }, [editingTeamId, teamsQuery.data])
 
   if (tournamentsQuery.isPending || teamsQuery.isPending) {
     return <PageLoader message="Загрузка команд…" />
@@ -156,47 +160,15 @@ export function TeamsManagementPage() {
         </motion.div>
       ) : null}
 
-      {editingTeam && isAdmin ? (
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="glass-panel mb-10 max-w-lg rounded-lg p-6 shadow-md"
-        >
-          <div className="mb-4 flex items-center justify-between gap-2">
-            <h2 className="text-lg font-semibold tracking-tight">Редактирование</h2>
-            <Button type="button" variant="ghost" size="sm" onClick={() => setEditingTeam(null)}>
-              Закрыть
-            </Button>
-          </div>
-          <p className="mb-4 text-sm text-muted-foreground">
-            Турнир:{' '}
-            <span className="text-foreground">{editingTeam.tournament.title}</span> — сменить турнир нельзя, только
-            название и логотип.
-          </p>
-          <TeamForm
-            idPrefix="mgmt-edit"
-            key={editingTeam.id}
-            defaultValues={{
-              name: editingTeam.name,
-              logo: editingTeam.logo ?? '',
-            }}
-            submitLabel="Сохранить"
-            isSubmitting={updateMutation.isPending}
-            onSubmit={async (payload) => {
-              setServerError(null)
-              try {
-                await updateMutation.mutateAsync({
-                  tournamentId: editingTeam.tournamentId,
-                  teamId: editingTeam.id,
-                  payload,
-                })
-                setEditingTeam(null)
-              } catch (err) {
-                setServerError(getRestErrorMessage(err))
-              }
-            }}
-          />
-        </motion.div>
+      {isAdmin ? (
+        <TeamEditModal
+          team={editingTeam}
+          open={editingTeamId !== null}
+          onOpenChange={(open) => {
+            if (!open) setEditingTeamId(null)
+          }}
+          onError={(msg) => setServerError(msg)}
+        />
       ) : null}
 
       {teamsQuery.data?.length === 0 ? (
@@ -212,8 +184,7 @@ export function TeamsManagementPage() {
               <TeamCard
                 team={team}
                 isAdmin={isAdmin}
-                onRosterError={(msg) => setServerError(msg)}
-                onEdit={isAdmin ? (t) => setEditingTeam(t) : undefined}
+                onEdit={isAdmin ? (t) => setEditingTeamId(t.id) : undefined}
                 onDelete={isAdmin ? (t) => void handleDelete(t) : undefined}
               />
             </li>

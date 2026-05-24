@@ -13,6 +13,11 @@ type PlayerFormProps = {
   onSubmit: (payload: ReturnType<typeof playerPayloadFromForm>) => Promise<void>
   isSubmitting: boolean
   submitLabel: string
+  /** Заголовок блока над полями */
+  heading?: string
+  /** Сбрасывать форму после успешной отправки */
+  resetAfterSubmit?: boolean
+  onCancel?: () => void
 }
 
 const defaults: PlayerFormValues = {
@@ -24,10 +29,20 @@ const defaults: PlayerFormValues = {
   rosterSlot: 'starter',
 }
 
-export function PlayerForm({ idPrefix, defaultValues, onSubmit, isSubmitting, submitLabel }: PlayerFormProps) {
+export function PlayerForm({
+  idPrefix,
+  defaultValues,
+  onSubmit,
+  isSubmitting,
+  submitLabel,
+  heading = 'Добавить игрока',
+  resetAfterSubmit = true,
+  onCancel,
+}: PlayerFormProps) {
+  const mergedDefaults = { ...defaults, ...defaultValues }
   const form = useForm<PlayerFormValues>({
     resolver: zodResolver(playerFormSchema),
-    defaultValues: { ...defaults, ...defaultValues },
+    defaultValues: mergedDefaults,
   })
 
   return (
@@ -35,11 +50,13 @@ export function PlayerForm({ idPrefix, defaultValues, onSubmit, isSubmitting, su
       className="space-y-3 border-t border-border pt-3"
       onSubmit={form.handleSubmit(async (values) => {
         await onSubmit(playerPayloadFromForm(values))
-        form.reset({ ...defaults, ...defaultValues })
+        if (resetAfterSubmit) {
+          form.reset({ ...defaults, ...defaultValues })
+        }
       })}
       noValidate
     >
-      <p className="text-xs font-medium text-muted-foreground">Добавить игрока</p>
+      <p className="text-xs font-medium text-muted-foreground">{heading}</p>
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor={`${idPrefix}-nick`}>Никнейм</Label>
@@ -99,9 +116,16 @@ export function PlayerForm({ idPrefix, defaultValues, onSubmit, isSubmitting, su
           <option value="sub">Запасной</option>
         </select>
       </div>
-      <Button type="submit" size="sm" disabled={isSubmitting}>
-        {isSubmitting ? 'Добавление…' : submitLabel}
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button type="submit" size="sm" disabled={isSubmitting}>
+          {isSubmitting ? 'Сохранение…' : submitLabel}
+        </Button>
+        {onCancel ? (
+          <Button type="button" variant="ghost" size="sm" onClick={onCancel}>
+            Отмена
+          </Button>
+        ) : null}
+      </div>
     </form>
   )
 }

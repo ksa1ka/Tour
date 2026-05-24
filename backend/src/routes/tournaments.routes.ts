@@ -6,6 +6,8 @@ import * as matchController from '../controllers/matchController.js'
 import * as scheduleController from '../controllers/scheduleController.js'
 import * as teamController from '../controllers/teamController.js'
 import * as tournamentController from '../controllers/tournamentController.js'
+import * as captainTeamController from '../controllers/captainTeamController.js'
+import { optionalAuth, requireAuth } from '../middleware/authMiddleware.js'
 import { requireAuthWithRoles } from '../middleware/roleMiddleware.js'
 import { validateBody, validateParams, validateQuery } from '../middleware/validateRequest.js'
 import { tournamentFantasyRouter } from './fantasy.routes.js'
@@ -30,6 +32,10 @@ import {
   tournamentTeamPlayerParamsSchema,
   updatePlayerBodySchema,
 } from '../validation/playerValidation.js'
+import {
+  registerCaptainTeamBodySchema,
+  updateCaptainTeamBodySchema,
+} from '../validation/captainTeamValidation.js'
 import { createTeamBodySchema, updateTeamBodySchema } from '../validation/teamValidation.js'
 import {
   createTournamentBodySchema,
@@ -119,6 +125,27 @@ tournamentsRouter.use('/:tournamentId/bracket', tournamentBracketRouter)
 tournamentsRouter.use('/:tournamentId/teams', tournamentTeamsRouter)
 tournamentsRouter.use('/:tournamentId/fantasy', tournamentFantasyRouter)
 
+tournamentsRouter.post(
+  '/:tournamentId/teams/register',
+  requireAuth,
+  validateParams(tournamentIdParamSchema),
+  validateBody(registerCaptainTeamBodySchema),
+  captainTeamController.register,
+)
+tournamentsRouter.patch(
+  '/:tournamentId/teams/my',
+  requireAuth,
+  validateParams(tournamentIdParamSchema),
+  validateBody(updateCaptainTeamBodySchema),
+  captainTeamController.updateMine,
+)
+tournamentsRouter.delete(
+  '/:tournamentId/teams/my',
+  requireAuth,
+  validateParams(tournamentIdParamSchema),
+  captainTeamController.withdraw,
+)
+
 tournamentsRouter.get('/:tournamentId/matches', validateParams(tournamentIdParamSchema), bracketController.listMatches)
 tournamentsRouter.get('/:tournamentId/standings', validateParams(tournamentIdParamSchema), scheduleController.getStandings)
 tournamentsRouter.get(
@@ -161,7 +188,12 @@ tournamentsRouter.post(
   validateBody(createTournamentBodySchema),
   tournamentController.create,
 )
-tournamentsRouter.get('/:id', validateParams(tournamentByIdParamSchema), tournamentController.getById)
+tournamentsRouter.get(
+  '/:id',
+  optionalAuth,
+  validateParams(tournamentByIdParamSchema),
+  tournamentController.getById,
+)
 tournamentsRouter.patch(
   '/:id',
   ...requireAuthWithRoles(UserRole.ADMIN),

@@ -10,6 +10,10 @@ import {
   adminUpdateShopRewardImageBodySchema,
 } from '../validation/adminRewardValidation.js'
 import {
+  adminUpdateUserRoleBodySchema,
+  adminUserIdParamsSchema,
+} from '../validation/adminUserValidation.js'
+import {
   adminSupportListQuerySchema,
   adminSupportReplyBodySchema,
   adminSupportStatusBodySchema,
@@ -20,6 +24,13 @@ export const adminRouter = Router()
 
 adminRouter.get('/stats', ...requireAuthWithRoles(UserRole.ADMIN), adminController.getDashboardStats)
 adminRouter.get('/users', ...requireAuthWithRoles(UserRole.ADMIN), adminController.listUsers)
+adminRouter.patch(
+  '/users/:userId/role',
+  ...requireAuthWithRoles(UserRole.ADMIN),
+  validateParams(adminUserIdParamsSchema),
+  validateBody(adminUpdateUserRoleBodySchema),
+  adminController.updateUserRole,
+)
 adminRouter.get('/fantasy-teams', ...requireAuthWithRoles(UserRole.ADMIN), adminController.listFantasyTeams)
 adminRouter.get('/shop-purchases', ...requireAuthWithRoles(UserRole.ADMIN), adminController.listRewardPurchases)
 adminRouter.get('/shop-rewards', ...requireAuthWithRoles(UserRole.ADMIN), adminController.listShopRewards)

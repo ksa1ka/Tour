@@ -12,7 +12,7 @@ export const authService = {
     return api.post<AuthSessionResponse>('/auth/login', body).then((r) => r.data)
   },
 
-  register(body: { email: string; password: string }) {
+  register(body: { email: string; password: string; accountRole: 'VIEWER' | 'PLAYER' }) {
     return api.post<AuthSessionResponse>('/auth/register', body).then((r) => r.data)
   },
 

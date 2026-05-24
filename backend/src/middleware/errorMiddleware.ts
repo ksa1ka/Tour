@@ -44,9 +44,11 @@ export function errorMiddleware(err: unknown, _req: Request, res: Response, _nex
       const hint =
         fields.includes('tournamentId') && fields.includes('name')
           ? 'Team name already exists in this tournament'
-          : fields.includes('email')
-            ? 'Email already registered'
-            : 'Resource already exists'
+          : fields.includes('tournamentId') && fields.includes('captainId')
+            ? 'Вы уже зарегистрировали команду на этот турнир'
+            : fields.includes('email')
+              ? 'Email already registered'
+              : 'Resource already exists'
       res.status(409).json({ error: hint })
       return
     }

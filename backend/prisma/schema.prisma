@@ -55,10 +55,11 @@ model User {
   updatedAt            DateTime @updatedAt
 
   tournamentsCreated Tournament[] @relation("TournamentCreator")
+  teamsAsCaptain     Team[]       @relation("TeamCaptain")
   fantasyTeams       FantasyTeam[]
-  refreshTokens      RefreshToken[]
-  rewardInventory    UserReward[]
-  supportTickets     SupportTicket[]
+  refreshTokens           RefreshToken[]
+  rewardInventory         UserReward[]
+  supportTickets          SupportTicket[]
 }
 
 enum SupportTicketStatus {
@@ -146,14 +147,17 @@ model Tournament {
 }
 
 model Team {
-  id           String @id @default(cuid())
+  id           String   @id @default(cuid())
   name         String
   logo         String?
   tournamentId String
+  /** Капитан, зарегистрировавший команду на турнир (null — команда создана админом). */
+  captainId    String?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
   tournament Tournament @relation(fields: [tournamentId], references: [id], onDelete: Cascade)
+  captain    User?      @relation("TeamCaptain", fields: [captainId], references: [id], onDelete: SetNull)
 
   players               Player[]
   matchesAsA            Match[]                @relation("MatchTeamA")
@@ -164,7 +168,9 @@ model Team {
   fantasyHighestScorePredictions FantasyMatchPrediction[] @relation("FantasyPredHighestScoreTeam")
 
   @@unique([tournamentId, name])
+  @@unique([captainId, tournamentId])
   @@index([tournamentId])
+  @@index([captainId])
 }
 
 /** Игрок состава (как в реальных esports-ростерах). */
